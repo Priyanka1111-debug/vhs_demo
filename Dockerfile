@@ -1,4 +1,11 @@
+# Use OpenJDK 17 as base image
 FROM openjdk:17-jdk-slim
-COPY build/libs/my-java-app.jar /app/my-java-app.jar
+
+# Set the working directory inside the container
 WORKDIR /app
-CMD ["java", "-jar", "my-java-app.jar"]
+
+# Copy the jar file from your host machine into the container
+COPY build/libs/*.jar app.jar
+
+# Run the application
+CMD ["java", "-jar", "app.jar"]
