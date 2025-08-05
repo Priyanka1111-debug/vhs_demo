@@ -1,0 +1,49 @@
+name: Build & Test Repo
+ 
+on:
+  push:
+    branches:
+      - main
+ 
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Dev environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - pre-prod
+          - prod
+      run_tests:
+        description: 'Run unit and integration tests'
+        required: false
+        type: boolean
+        default: true
+ 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+ 
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+ 
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+ 
+    - name: Cache Gradle packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.gradle/caches
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    - name: Make gradlew executable
+      run: chmod +x ./gradlew
+
+    - name: Build with Gradle
+      run: ./gradlew build
