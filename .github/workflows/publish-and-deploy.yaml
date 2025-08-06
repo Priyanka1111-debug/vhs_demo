@@ -40,17 +40,19 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v1
  
-    - name: Build, tag, and push Docker image
+    - name: Build and push Docker image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
+        IMAGE_TAG: ${{ github.sha }}
       run: |
-        IMAGE_TAG=latest
-        REPO_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/${{ secrets.ECR_REPOSITORY }}
-        docker build -t $REPO_URI:$IMAGE_TAG .
-        docker push $REPO_URI:$IMAGE_TAG
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    - name: Update Lambda function to use ECR image
+      run: |
+        aws lambda update-function-code \
+          --function-name cv-vhs-data-ingestion-function \
+          --image-uri ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
  
-    - name: Update ECS service
-      run: |
-        aws ecs update-service \
-          --cluster ${{ secrets.ECS_CLUSTER_NAME }} \
-          --service ${{ secrets.ECS_SERVICE_NAME }} \
-          --force-new-deployment \
-          --region ${{ secrets.AWS_REGION }}
+
